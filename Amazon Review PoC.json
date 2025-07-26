@@ -1,0 +1,247 @@
+{
+  "name": "Amazon Review PoC",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        16,
+        0
+      ],
+      "id": "7dc6310a-c945-442f-a4d7-a8e1344a8fd6",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "59e5dc7e-325c-4fa1-b5e4-8a6292c6b30c",
+              "name": "reviewText",
+              "value": "The kettle stopped working after just one week.",
+              "type": "string"
+            },
+            {
+              "id": "cc0ae290-1f94-47d7-84ec-a903a2e6ce82",
+              "name": "reviewId",
+              "value": "rev-001",
+              "type": "string"
+            },
+            {
+              "id": "165cd03a-ce30-49ba-9b0b-1fab1b064df4",
+              "name": "asin",
+              "value": "B09XYZ1234",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        -64
+      ],
+      "id": "d8a65db4-56bf-48be-ab43-5e40e993ba2a",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  const content = item.json.choices?.[0]?.message?.content || \"\";\n\n  let parsed = {\n    sentiment: \"N/A\",\n    complaint: \"N/A\"\n  };\n\n  try {\n    parsed = JSON.parse(content);\n  } catch (error) {\n    parsed.sentiment = \"parse error\";\n    parsed.complaint = \"parse error\";\n  }\n\n  return {\n    json: {\n      sentiment: parsed.sentiment || \"N/A\",\n      complaint: parsed.complaint || \"N/A\",\n      asin: item.json.asin || \"N/A\",\n      review: item.json.review || item.json.reviewText || \"N/A\",\n      date: new Date().toISOString()\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        -256
+      ],
+      "id": "3ad4d1bc-6e0c-480b-a399-16e11af3e7df",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Bbf2vggRGxm8tXD5HfrlVUzUVHNi_-xbPQO0bu_n8mc",
+          "mode": "list",
+          "cachedResultName": "AMAZON",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Bbf2vggRGxm8tXD5HfrlVUzUVHNi_-xbPQO0bu_n8mc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sayfa1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Bbf2vggRGxm8tXD5HfrlVUzUVHNi_-xbPQO0bu_n8mc/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sentiment": "={{$json[\"sentiment\"]}}",
+            "complaint": "={{$json[\"complaint\"]}}",
+            "review": "={{$json[\"review\"]}}",
+            "date": "={{$json[\"date\"]}}",
+            "asin": "={{$json[\"asin\"]}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "sentiment",
+              "displayName": "sentiment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "complaint",
+              "displayName": "complaint",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "asin",
+              "displayName": "asin",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "review",
+              "displayName": "review",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1088,
+        -256
+      ],
+      "id": "2bd35df8-f47a-4d69-897e-733c61a7a1b3",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZYAnujlAGbTngOOn",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"Authorization\": \"Bearer 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\",\n  \"Content-Type\": \"application/json\",\n  \"HTTP-Referer\": \"https://n8n.io\"\n} ",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-3.5-turbo\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a helpful assistant that returns only valid JSON with keys 'sentiment' and 'complaint'.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Given the following Amazon review, respond in JSON with keys 'sentiment' and 'complaint'.\\n\\nMetadata:\\nASIN: {{$json.asin}}\\nReview ID: {{$json.reviewId}}\\n\\nReview: {{$json.review}}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        464,
+        -32
+      ],
+      "id": "09b8216a-6ae8-4a40-aa3a-ab80f005b592",
+      "name": "HTTP Request"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f04027a6-d768-44fe-ae37-1064383a3068",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "da794451c878fa989031ffeac0f5fbeff66bad7c539ef2782091bc555c777fff"
+  },
+  "id": "G6ddkWTSP8Tq8V9N",
+  "tags": []
+}
